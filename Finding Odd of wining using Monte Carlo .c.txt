@@ -1,0 +1,383 @@
+//these are libraries we use
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <windows.h>
+
+struct info {
+	//number of card
+	int n;
+	//suit of card
+	char t[20]; 
+};
+
+void initCards(struct info []);
+int givePoints(char [], int);
+int randomGenerator();
+int checkNumber(int);
+int checkSuit(char []);
+int checkSame(int, int, char [], char []);
+void results(int, char []);
+void printStartup();
+
+int main(){
+	printStartup();
+	struct info *cards, *remaining_cards, *temp, *opponent;
+	
+	//reserving space in the memory
+	cards = (struct info*)malloc(52 * sizeof(struct info));
+	temp = (struct info*)malloc(51 * sizeof(struct info));
+	remaining_cards = (struct info*)malloc(50 * sizeof(struct info));
+	opponent = (struct info*)malloc(2 * sizeof(struct info));
+	
+	//flags and loop variables
+	int i, k, j, r1, r2, check, correct = 1;
+	char *descision;
+	descision = (char*)malloc(20 * sizeof(char));
+	
+	//user cards
+	char *card1_suit, *card2_suit;
+	card1_suit = (char*)malloc(20 * sizeof(char));
+	card2_suit = (char*)malloc(20 * sizeof(char));
+	
+	int card1_n, card2_n;
+	
+	//overall wins, losses and ties in the following session as a whole	
+	float ovw = 0, ovl = 0, ovt = 0;
+	
+	while(strcmp(descision, "END") != 0){
+		//points of user and opponent initialized for each iteration
+		int pu1 = 0, pu2 = 0, pu = 0, po1 = 0, po2 = 0, po = 0, loss = 0, tie = 0;
+		float win = 0;
+		
+		initCards(cards);
+		printf("Enter your card choices one by one:\n\n");
+		printf("Enter your card's number: ");
+		scanf("%d", &card1_n);
+		check = checkNumber(card1_n);
+		//loops number is correct
+		while (check == 0) {
+			printf("invalid number, enter again: ");
+			scanf("%d", &card1_n);
+			check = checkNumber(card1_n);
+		}
+		
+		printf("Enter your card's suit: ");
+		scanf("%s", card1_suit);
+		fflush(stdin);
+		check = checkSuit(card1_suit);
+		//loops until suit is correct
+		while (check == 0) {
+			printf("invalid suit, enter again: ");
+			scanf("%s", card1_suit);
+			fflush(stdin);
+			check = checkSuit(card1_suit);
+		}
+		
+		printf("\nEnter your card's number: ");
+		scanf("%d", &card2_n);
+		check = checkNumber(card2_n);
+		//loops until card number is correct
+		while (check == 0) {
+			printf("invalid number, enter again: ");
+			scanf("%d", &card2_n);
+			check = checkNumber(card2_n);
+		}
+		
+		printf("Enter your card's suit: ");
+		scanf("%s", card2_suit);
+		check = checkSuit(card2_suit);
+		//loops until suit is correct
+		while (check == 0) {
+			printf("invalid suit, enter again: ");
+			scanf("%s", card2_suit);
+			fflush(stdin);
+			check = checkSuit(card2_suit);
+		}
+		
+		correct = checkSame(card1_n, card2_n, card1_suit, card2_suit);
+		
+		while (correct == 0) {
+			printf("Can't select same card again!\n");
+			printf("Enter number of card 2 you want: ");
+			scanf("%d", &card2_n);
+			check = checkNumber(card2_n);
+			while (check == 0) {
+				printf("invalid number, enter again: ");
+				scanf("%d", &card2_n);
+				check = checkNumber(card2_n);
+			}
+			
+			printf("Enter suit of card 2 you want: ");
+			scanf("%s", card2_suit);
+			check = checkSuit(card2_suit);
+			while (check == 0) {
+				printf("invalid suit, enter again: ");
+				scanf("%s", card2_suit);
+				fflush(stdin);
+				check = checkSuit(card2_suit);
+			}
+			
+			correct = checkSame(card1_n, card2_n, card1_suit, card2_suit);
+		}
+		
+		//initializing points of user
+		pu1 = card1_n;
+		pu2 = card2_n;
+		
+		//give points according to suit
+		pu1 = givePoints(card1_suit, pu1);
+		pu2 = givePoints(card2_suit, pu2);
+		
+		//total points of both cards
+		pu = pu1 + pu2;
+	
+		//removing the first card from the deck
+		for (i = 0, j = 0; i < 52; i++){
+			if ((card1_n != cards[i].n) || (strcmp(card1_suit, cards[i].t) != 0)){ 
+				temp[j].n = cards[i].n;
+				strcpy(temp[j].t, cards[i].t);
+				j++;
+			}
+		}
+		
+		//removing the second card from the deck
+		for (i = 0, j = 0; i < 52; i++){
+			if ((card2_n != temp[i].n) || (strcmp(card2_suit, temp[i].t) != 0)){ 
+				remaining_cards[j].n = temp[i].n;
+				strcpy(remaining_cards[j].t, temp[i].t);
+				j++;
+			}
+		}
+		
+		srand(time(0));
+		
+		//monti-carlo sequence, generating 100,2530 posibilites
+		for (i = 0; i < 100253; i++){
+			
+			//generating 2 random numbers, for two random indexes
+			r1 = randomGenerator();
+			r2 = randomGenerator();
+			
+			//making sure the second random number is not the same as the first one
+			while (r2 == r1) {
+				r2 = randomGenerator();
+			}
+			
+			//random indexes give random cards
+			opponent[0].n = remaining_cards[r1].n;
+			strcpy(opponent[0].t, remaining_cards[r1].t);
+			opponent[1].n = remaining_cards[r2].n;
+			strcpy(opponent[1].t, remaining_cards[r2].t);
+	
+			//initializing points of opponent's cards
+			po1 = opponent[0].n;
+			po2 = opponent[1].n;
+			
+			//giving points according to suit
+			po1 = givePoints(opponent[0].t, po1);
+			po2 = givePoints(opponent[1].t, po2);
+			
+			//calculating total points of opponent's possible hand
+			po = po1 + po2;
+			
+			//finding who won, according to points
+			if (pu > po) {
+				win++;
+				ovw++;
+			} else if (pu < po) {
+				loss++;
+				ovl++;
+			} else if(pu==po) {
+				tie++;
+				ovt++;
+			}
+			
+		}
+		
+		printf("\n");
+		printf("-----------------------------------------------------");
+		printf("\n\n");
+		
+		int wins = (int)win;
+		results(wins, "Wins");
+		
+		int ls = (int)loss;
+		results(ls, "Losses");
+		
+		int ties = (int)tie;
+		results(ties, "Ties");
+		
+		printf("\n");
+		printf("-----------------------------------------------------");
+		printf("\n");
+		
+		printf("\nwin percentage:  \t%.2f %%\nloss percentage:\t%.2f %%\ntie percentage:  \t%.2f %%\n\n", (win)/(win+loss+tie)*100, loss/(loss+win+tie)*100, tie/(tie+loss+win)*100);	
+	
+		printf("Enter \"END\" if you want to stop entering more values: ");
+		scanf("%s", descision);
+		system("CLS");
+	}
+	
+	printf("Your overall percentage of winning, losing, and tie this session has been:\n");
+	printf("\nOverall win percentage = %.2f %%\nOverall lost percentage = %.2f %%\nOverall tie percentage = %.2f %%", (ovw)/(ovw+ovl+ovt)*100, ovl/(ovl+ovw+ovt)*100, ovt/(ovw+ovl+ovt)*100);
+	
+	return 0;
+}	
+
+
+
+void initCards(struct info cards[]){
+	//ACE
+	cards[0].n = 1; strcpy(cards[0].t, "HEARTS");
+	cards[1].n = 1; strcpy(cards[1].t, "SPADES");
+	cards[2].n = 1; strcpy(cards[2].t, "CLUBS");
+	cards[3].n = 1; strcpy(cards[3].t, "DIAMONDS");
+	//2
+	cards[4].n = 2; strcpy(cards[4].t, "HEARTS");
+	cards[5].n = 2; strcpy(cards[5].t, "SPADES");
+	cards[6].n = 2; strcpy(cards[6].t, "CLUBS");
+	cards[7].n = 2; strcpy(cards[7].t, "DIAMONDS");
+	//3
+	cards[8].n = 3; strcpy(cards[8].t, "HEARTS");
+	cards[9].n = 3; strcpy(cards[9].t, "SPADES");
+	cards[10].n = 3; strcpy(cards[10].t, "CLUBS");
+	cards[11].n = 3; strcpy(cards[11].t, "DIAMONDS");
+	//4
+	cards[12].n = 4; strcpy(cards[12].t, "HEARTS");
+	cards[13].n = 4; strcpy(cards[13].t, "SPADES");
+	cards[14].n = 4; strcpy(cards[14].t, "CLUBS");
+	cards[15].n = 4; strcpy(cards[15].t, "DIAMONDS");
+	//5
+	cards[16].n = 5; strcpy(cards[16].t, "HEARTS");
+	cards[17].n = 5; strcpy(cards[17].t, "SPADES");
+	cards[18].n = 5; strcpy(cards[18].t, "CLUBS");
+	cards[19].n = 5; strcpy(cards[19].t, "DIAMONDS");
+	//6
+	cards[20].n = 6; strcpy(cards[20].t, "HEARTS");
+	cards[21].n = 6; strcpy(cards[21].t, "SPADES");
+	cards[22].n = 6; strcpy(cards[22].t, "CLUBS");
+	cards[23].n = 6; strcpy(cards[23].t, "DIAMONDS");
+	//7
+	cards[24].n = 7; strcpy(cards[24].t, "HEARTS");
+	cards[25].n = 7; strcpy(cards[25].t, "SPADES");
+	cards[26].n = 7; strcpy(cards[26].t, "CLUBS");
+	cards[27].n = 7; strcpy(cards[27].t, "DIAMONDS");
+	//8
+	cards[28].n = 8; strcpy(cards[28].t, "HEARTS");
+	cards[29].n = 8; strcpy(cards[29].t, "SPADES");
+	cards[30].n = 8; strcpy(cards[30].t, "CLUBS");
+	cards[31].n = 8; strcpy(cards[31].t, "DIAMONDS");
+	//9
+	cards[32].n = 9; strcpy(cards[32].t, "HEARTS");
+	cards[33].n = 9; strcpy(cards[33].t, "SPADES");
+	cards[34].n = 9; strcpy(cards[34].t, "CLUBS");
+	cards[35].n = 9; strcpy(cards[35].t, "DIAMONDS");
+	//10
+	cards[36].n = 10; strcpy(cards[36].t, "HEARTS");
+	cards[37].n = 10; strcpy(cards[37].t, "SPADES");
+	cards[38].n = 10; strcpy(cards[38].t, "CLUBS");
+	cards[39].n = 10; strcpy(cards[39].t, "DIAMONDS");
+	//King
+	cards[40].n = 11; strcpy(cards[40].t, "HEARTS");
+	cards[41].n = 11; strcpy(cards[41].t, "SPADES");
+	cards[42].n = 11; strcpy(cards[42].t, "CLUBS");
+	cards[43].n = 11; strcpy(cards[43].t, "DIAMONDS");
+	//Queen
+	cards[44].n = 12; strcpy(cards[44].t, "HEARTS");
+	cards[45].n = 12; strcpy(cards[45].t, "SPADES");
+	cards[46].n = 12; strcpy(cards[46].t, "CLUBS");
+	cards[47].n = 12; strcpy(cards[47].t, "DIAMONDS");
+	//Jack
+	cards[48].n = 13; strcpy(cards[48].t, "HEARTS");
+	cards[49].n = 13; strcpy(cards[49].t, "SPADES");
+	cards[50].n = 13; strcpy(cards[50].t, "CLUBS");
+	cards[51].n = 13; strcpy(cards[51].t, "DIAMONDS");
+}
+
+
+int randomGenerator(){
+	int n;
+	
+	n = (rand() % (49 - 0 + 1)) + 0;
+	
+    return n ;
+}
+
+
+int givePoints(char _suit[], int _points){
+	
+	if (strcmp(_suit, "HEARTS") == 0 || strcmp(_suit, "CLUBS") == 0) {
+		_points += 2;
+	} else {
+		_points++;
+	}
+	
+	return _points;
+}
+
+
+int checkNumber(int _n){
+	switch(_n){
+		case 1 ... 13:
+			return 1;
+			break;
+		default:
+			return 0;	
+	}
+}
+
+
+int checkSuit(char _suit[]){
+	if ((strcmp(_suit, "DIAMONDS") == 0) || (strcmp(_suit, "SPADES") == 0) || (strcmp(_suit, "CLUBS") == 0) || (strcmp(_suit, "HEARTS") == 0)){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+int checkSame(int _n1, int _n2, char _s1[], char _s2[]){
+	if ((_n1 == _n2) && (strcmp(_s1, _s2) == 0)) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+
+void results(int _n, char _t[]){
+	int i;
+	for (i = 0; i <= _n; i++){
+		printf("%s:\t\t%d", _t, i);
+		if (_n < 400) Sleep(2); else if (_n < 800 && _n >= 400) Sleep(1);
+		printf("\r");
+	}
+	printf("\n");
+}
+
+
+void printStartup(){
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+    WORD saved_attributes;
+	
+    //Save current attributes since color will be temp
+    GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
+    saved_attributes = consoleInfo.wAttributes;
+	
+    SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN);
+	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\t\t\t\t    Welcome to the monte carlo simulation project");
+	Sleep(2000);
+	
+	//Restore original attributes
+    SetConsoleTextAttribute(hConsole, saved_attributes);
+	system("CLS");
+	
+	printf("Let's dive into what the program will be doing briefly:\n\n");
+	printf("  > The program will work on a pair of cards you chose (your \"hand\")\n  > The program will check the odds of your hand winning\n  > The program will compare your hand with randomly selected realistic hands your opponent can recieve\n  > The program will return a accurate probability\n  > The program will will run approximately 100,000 times for as realistic a odd as possible");
+	printf("\n\nPress any key to continue: ");
+	getch();
+	system("CLS");
+}
